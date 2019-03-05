@@ -5,8 +5,18 @@ from PySide2 import QtGui
 from PySide2 import QtCore
 
 import requests
+import re
 
-api_url = 'http://127.0.0.1:5000'
+def getContentDataFromServer(path):
+    api_url = 'http://127.0.0.1:5000'
+    url = f'{api_url}/content/{path}/'
+    # Remove multiple slashes at the end
+    clean_url = re.sub('/*$', '/', url)
+    r = requests.get(clean_url)
+    if r.status_code / 100 != 2:
+        raise RuntimeError(f'Server answered with {r.status_code}')
+    return r.json()
+
 
 class AssetPathItem(QtWidgets.QTreeWidgetItem):
     def getFullPath(self) -> str:
@@ -24,10 +34,7 @@ class AssetPathItem(QtWidgets.QTreeWidgetItem):
 
     def requestChildren(self):
         self.removeAllChildren()
-        url = f'{api_url}/content/{self.getFullPath()}/'
-        r = requests.get(url)
-        if r.status_code / 100 != 2: sys.exit()
-        data = r.json()
+        data = getContentDataFromServer(self.getFullPath())
         for entry in data:
             item = AssetPathItem(self, [f'{entry["name"]}'])
             AssetPathItem(item, ['Empty'])
@@ -42,9 +49,7 @@ class MainWindow(QtWidgets.QMainWindow):
         tree = QtWidgets.QTreeWidget()
         tree.header().hide()
 
-        r = requests.get(f'{api_url}/content/')
-        if r.status_code / 100 != 2: sys.exit()
-        data = r.json()
+        data = getContentDataFromServer('/')
 
         for entry in data:
             item = AssetPathItem(tree, [f'{entry["name"]}'])
