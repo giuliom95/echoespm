@@ -7,9 +7,11 @@ from PySide2 import QtCore
 import requests
 import re
 
+import random
+
 def getContentDataFromServer(path):
     api_url = 'http://127.0.0.1:5000'
-    url = f'{api_url}/content/{path}/'
+    url = f'{api_url}/{path}/'
     # Remove multiple slashes at the end
     clean_url = re.sub('/*$', '/', url)
     r = requests.get(clean_url)
@@ -28,16 +30,21 @@ class AssetPathItem(QtWidgets.QTreeWidgetItem):
         return '/'.join(path[::-1])
 
     def removeAllChildren(self):
-        for ci in range(self.childCount()):
-            c = self.child(ci)
+        c = self.child(0)
+        while c is not None:
             self.removeChild(c)
+            c = self.child(0)
 
     def requestChildren(self):
         self.removeAllChildren()
-        data = getContentDataFromServer(self.getFullPath())
-        for entry in data:
+        full_path = self.getFullPath()
+        data = getContentDataFromServer(full_path)
+        sorted_data = sorted(data, key=lambda item: item['name'])
+        for entry in sorted_data:
             item = AssetPathItem(self, [f'{entry["name"]}'])
-            AssetPathItem(item, ['Empty'])
+            # No need to add children to versions
+            if full_path.count('/') < 3:
+                AssetPathItem(item, ['Empty'])
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -49,12 +56,9 @@ class MainWindow(QtWidgets.QMainWindow):
         tree = QtWidgets.QTreeWidget()
         tree.header().hide()
 
-        data = getContentDataFromServer('/')
+        item = AssetPathItem(tree, ['content'])
+        AssetPathItem(item, ['Empty'])
 
-        for entry in data:
-            item = AssetPathItem(tree, [f'{entry["name"]}'])
-            AssetPathItem(item, ['Empty'])
-            
         tree.itemExpanded.connect(AssetPathItem.requestChildren)
 
         mainLayout = QtWidgets.QVBoxLayout()
