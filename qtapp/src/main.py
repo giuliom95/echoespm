@@ -6,6 +6,8 @@ from PySide2 import QtCore
 
 import requests
 
+api_url = 'http://127.0.0.1:5000'
+
 class AssetPathItem(QtWidgets.QTreeWidgetItem):
     def getFullPath(self) -> str:
         node = self
@@ -13,10 +15,22 @@ class AssetPathItem(QtWidgets.QTreeWidgetItem):
         while node is not None:
             path.append(node.text(0))
             node = node.parent()
-        return '/' + '/'.join(path[::-1]) + '/'
+        return '/'.join(path[::-1])
+
+    def removeAllChildren(self):
+        for ci in range(self.childCount()):
+            c = self.child(ci)
+            self.removeChild(c)
 
     def requestChildren(self):
-        print("Hello World: {0}".format(self.getFullPath()))
+        self.removeAllChildren()
+        url = f'{api_url}/content/{self.getFullPath()}/'
+        r = requests.get(url)
+        if r.status_code / 100 != 2: sys.exit()
+        data = r.json()
+        for entry in data:
+            item = AssetPathItem(self, [f'{entry["name"]}'])
+            AssetPathItem(item, ['Empty'])
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -27,10 +41,15 @@ class MainWindow(QtWidgets.QMainWindow):
     def initUI(self):
         tree = QtWidgets.QTreeWidget()
         tree.header().hide()
-        for i in range(10):
-            item = AssetPathItem(tree, ['{0}'.format(i)])
-            for j in range(20):
-                subitem = AssetPathItem(item, ['{0}'.format(j)])
+
+        r = requests.get(f'{api_url}/content/')
+        if r.status_code / 100 != 2: sys.exit()
+        data = r.json()
+
+        for entry in data:
+            item = AssetPathItem(tree, [f'{entry["name"]}'])
+            AssetPathItem(item, ['Empty'])
+            
         tree.itemExpanded.connect(AssetPathItem.requestChildren)
 
         mainLayout = QtWidgets.QVBoxLayout()
