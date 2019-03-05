@@ -53,20 +53,34 @@ class MainWindow(QtWidgets.QMainWindow):
         self.initUI()
 
     def initUI(self):
+
+        # Content tree
         tree = QtWidgets.QTreeWidget()
         tree.header().hide()
-
         item = AssetPathItem(tree, ['content'])
         AssetPathItem(item, ['Empty'])
-
         tree.itemExpanded.connect(AssetPathItem.requestChildren)
 
-        mainLayout = QtWidgets.QVBoxLayout()
-        mainLayout.addWidget(tree)
+        # Info panel
+        l = QtWidgets.QLabel("TEST")
+        b1 = QtWidgets.QPushButton("TEST1")
+        b2 = QtWidgets.QPushButton("TEST2")
+        leftTopLayout = QtWidgets.QVBoxLayout()
+        leftTopLayout.addWidget(l)
+        leftTopLayout.addStretch()
+        leftTopLayout.addWidget(b1)
+        leftTopLayout.addWidget(b2)
+        leftTopLayoutContainer = QtWidgets.QWidget()
+        leftTopLayoutContainer.setMinimumWidth(200)
+        leftTopLayoutContainer.setLayout(leftTopLayout)
 
-        centralWidget = QtWidgets.QWidget()
-        centralWidget.setLayout(mainLayout)
-        self.setCentralWidget(centralWidget)
+        mainLayout = QtWidgets.QHBoxLayout()
+        mainLayout.addWidget(tree)
+        mainLayout.addWidget(leftTopLayoutContainer)
+
+        mainLayoutContainer = QtWidgets.QWidget()
+        mainLayoutContainer.setLayout(mainLayout)
+        self.setCentralWidget(mainLayoutContainer)
 
         self.resize(800, 600)
         self.setWindowTitle('Test')
