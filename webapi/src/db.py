@@ -73,7 +73,6 @@ class db(object):
             FROM content_types AS ct, contents AS c 
             WHERE ct.name='{0}' AND c.type=ct.id
         '''.format(content_type)
-        print(query)
         self.cursor.execute(query)
         res = self.cursor.fetchall()
         if res == []:
@@ -322,6 +321,9 @@ class db(object):
         res = self.cursor.fetchall()
         if res == []:
             raise KeyError('No matching resource found.')
+
+        for i in res:
+            i['name'] = 'v{0:0>3}'.format(i['version'])
         return res
 
 
