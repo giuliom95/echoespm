@@ -21,6 +21,13 @@ def getContentDataFromServer(path):
 
 
 class AssetPathItem(QtWidgets.QTreeWidgetItem):
+    class Levels():
+        root = 0
+        content_type = 1
+        content = 2
+        resource = 3
+        version = 4
+
     def getFullPath(self) -> str:
         node = self
         path = []
@@ -35,6 +42,14 @@ class AssetPathItem(QtWidgets.QTreeWidgetItem):
             self.removeChild(c)
             c = self.child(0)
 
+    def getLevel(self):
+        level = -1
+        node = self
+        while node is not None:
+            level += 1
+            node = node.parent()
+        return level
+
     def requestChildren(self):
         self.removeAllChildren()
         full_path = self.getFullPath()
@@ -43,8 +58,9 @@ class AssetPathItem(QtWidgets.QTreeWidgetItem):
         for entry in sorted_data:
             item = AssetPathItem(self, [f'{entry["name"]}'])
             # No need to add children to versions
-            if full_path.count('/') < 3:
-                AssetPathItem(item, ['Empty'])
+            if self.getLevel() != AssetPathItem.Levels.resource:
+                # Add dummy node to make children expandable
+                AssetPathItem(item, ['Empty'])  
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -55,11 +71,12 @@ class MainWindow(QtWidgets.QMainWindow):
     def initUI(self):
 
         # Content tree
-        tree = QtWidgets.QTreeWidget()
-        tree.header().hide()
-        item = AssetPathItem(tree, ['content'])
+        self.tree = QtWidgets.QTreeWidget()
+        self.tree.header().hide()
+        item = AssetPathItem(self.tree, ['content'])
         AssetPathItem(item, ['Empty'])
-        tree.itemExpanded.connect(AssetPathItem.requestChildren)
+        self.tree.itemExpanded.connect(AssetPathItem.requestChildren)
+        self.tree.itemSelectionChanged.connect(self.treeSelectionChanged)
 
         # Info panel
         l = QtWidgets.QLabel("TEST")
@@ -75,7 +92,7 @@ class MainWindow(QtWidgets.QMainWindow):
         leftTopLayoutContainer.setLayout(leftTopLayout)
 
         mainLayout = QtWidgets.QHBoxLayout()
-        mainLayout.addWidget(tree)
+        mainLayout.addWidget(self.tree)
         mainLayout.addWidget(leftTopLayoutContainer)
 
         mainLayoutContainer = QtWidgets.QWidget()
@@ -85,6 +102,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.resize(800, 600)
         self.setWindowTitle('Test')
         self.show()
+
+    def treeSelectionChanged(self):
+        current_level = 0
+
+        selection = self.tree.selectedItems()
+        if len(selection) == 1:
+            current_level = selection[0].getLevel()
+
+        print(current_level)
+        
 
 
 if __name__ == "__main__":
