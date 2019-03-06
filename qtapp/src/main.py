@@ -78,22 +78,33 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tree.itemExpanded.connect(AssetPathItem.requestChildren)
         self.tree.itemSelectionChanged.connect(self.treeSelectionChanged)
 
-        # Info panel
+        infoLayoutTabs = []
+
+        infoLayoutTabs.append(QtWidgets.QWidget())
+
         l = QtWidgets.QLabel("TEST")
         b1 = QtWidgets.QPushButton("TEST1")
         b2 = QtWidgets.QPushButton("TEST2")
-        leftTopLayout = QtWidgets.QVBoxLayout()
-        leftTopLayout.addWidget(l)
-        leftTopLayout.addStretch()
-        leftTopLayout.addWidget(b1)
-        leftTopLayout.addWidget(b2)
-        leftTopLayoutContainer = QtWidgets.QWidget()
-        leftTopLayoutContainer.setMinimumWidth(200)
-        leftTopLayoutContainer.setLayout(leftTopLayout)
+        tabLayout = QtWidgets.QVBoxLayout()
+        tabLayout.addWidget(l)
+        tabLayout.addStretch()
+        tabLayout.addWidget(b1)
+        tabLayout.addWidget(b2)
+        infoLayoutTabs.append(QtWidgets.QWidget())
+        infoLayoutTabs[-1].setLayout(tabLayout)
+
+        self.infoLayout = QtWidgets.QStackedLayout()
+        for w in infoLayoutTabs:
+            self.infoLayout.addWidget(w)
+
+        infoLayoutContainer = QtWidgets.QWidget()
+        infoLayoutContainer.setMinimumWidth(200)
+        infoLayoutContainer.setMaximumWidth(200)
+        infoLayoutContainer.setLayout(self.infoLayout)
 
         mainLayout = QtWidgets.QHBoxLayout()
         mainLayout.addWidget(self.tree)
-        mainLayout.addWidget(leftTopLayoutContainer)
+        mainLayout.addWidget(infoLayoutContainer)
 
         mainLayoutContainer = QtWidgets.QWidget()
         mainLayoutContainer.setLayout(mainLayout)
@@ -110,7 +121,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if len(selection) == 1:
             current_level = selection[0].getLevel()
 
-        print(current_level)
+        self.infoLayout.setCurrentIndex(len(selection))
         
 
 
