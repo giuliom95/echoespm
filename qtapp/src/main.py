@@ -20,49 +20,6 @@ def getContentDataFromServer(path):
     return r.json()
 
 
-class AssetPathItem(QtWidgets.QTreeWidgetItem):
-    class Levels():
-        root = 0
-        content_type = 1
-        content = 2
-        resource = 3
-        version = 4
-
-    def getFullPath(self) -> str:
-        node = self
-        path = []
-        while node is not None:
-            path.append(node.text(0))
-            node = node.parent()
-        return '/'.join(path[::-1])
-
-    def removeAllChildren(self):
-        c = self.child(0)
-        while c is not None:
-            self.removeChild(c)
-            c = self.child(0)
-
-    def getLevel(self):
-        level = -1
-        node = self
-        while node is not None:
-            level += 1
-            node = node.parent()
-        return level
-
-    def requestChildren(self):
-        self.removeAllChildren()
-        full_path = self.getFullPath()
-        data = getContentDataFromServer(full_path)
-        sorted_data = sorted(data, key=lambda item: item['name'])
-        for entry in sorted_data:
-            item = AssetPathItem(self, [f'{entry["name"]}'])
-            # No need to add children to versions
-            if self.getLevel() != AssetPathItem.Levels.resource:
-                # Add dummy node to make children expandable
-                AssetPathItem(item, ['Empty'])  
-
-
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -70,58 +27,38 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def initUI(self):
 
-        # Content tree
-        self.tree = QtWidgets.QTreeWidget()
-        self.tree.header().hide()
-        item = AssetPathItem(self.tree, ['content'])
-        AssetPathItem(item, ['Empty'])
-        self.tree.itemExpanded.connect(AssetPathItem.requestChildren)
-        self.tree.itemSelectionChanged.connect(self.treeSelectionChanged)
-
-        infoLayoutTabs = []
-
-        infoLayoutTabs.append(QtWidgets.QWidget())
-
-        l = QtWidgets.QLabel("TEST")
-        b1 = QtWidgets.QPushButton("TEST1")
-        b2 = QtWidgets.QPushButton("TEST2")
-        tabLayout = QtWidgets.QVBoxLayout()
-        tabLayout.addWidget(l)
-        tabLayout.addStretch()
-        tabLayout.addWidget(b1)
-        tabLayout.addWidget(b2)
-        infoLayoutTabs.append(QtWidgets.QWidget())
-        infoLayoutTabs[-1].setLayout(tabLayout)
-
-        self.infoLayout = QtWidgets.QStackedLayout()
-        for w in infoLayoutTabs:
-            self.infoLayout.addWidget(w)
-
-        infoLayoutContainer = QtWidgets.QWidget()
-        infoLayoutContainer.setMinimumWidth(200)
-        infoLayoutContainer.setMaximumWidth(200)
-        infoLayoutContainer.setLayout(self.infoLayout)
-
-        mainLayout = QtWidgets.QHBoxLayout()
-        mainLayout.addWidget(self.tree)
-        mainLayout.addWidget(infoLayoutContainer)
-
+        mainLayout = QtWidgets.QVBoxLayout()
         mainLayoutContainer = QtWidgets.QWidget()
         mainLayoutContainer.setLayout(mainLayout)
-        self.setCentralWidget(mainLayoutContainer)
 
+        self.addressBar = QtWidgets.QHBoxLayout()
+        backToRootBtn = QtWidgets.QPushButton('content')
+        self.addressBar.addWidget(backToRootBtn)
+        firstAddressSlash = QtWidgets.QLabel('/')
+        self.addressBar.addWidget(firstAddressSlash)
+        self.addressBar.addStretch()
+        mainLayout.addLayout(self.addressBar)
+
+        dirGrid = QtWidgets.QGridLayout()
+        dirGrid.addWidget(QtWidgets.QPushButton('CIAO'),0,0)
+        dirGrid.addWidget(QtWidgets.QPushButton('CIAO'),0,1)
+        dirGrid.addWidget(QtWidgets.QPushButton('CIAO'),0,2)
+        dirGrid.addWidget(QtWidgets.QPushButton('CIAO'),1,0)
+        dirGrid.addWidget(QtWidgets.QPushButton('CIAO'),1,1)
+        dirGrid.addWidget(QtWidgets.QPushButton('CIAO'),1,2)
+
+        dirGridContainer = QtWidgets.QWidget()
+        dirGridContainer.setLayout(dirGrid)
+
+        currentDirScrollableArea = QtWidgets.QScrollArea()
+        currentDirScrollableArea.setWidget(dirGridContainer)
+        mainLayout.addWidget(currentDirScrollableArea)
+
+        self.setCentralWidget(mainLayoutContainer)
         self.resize(800, 600)
         self.setWindowTitle('Test')
         self.show()
-
-    def treeSelectionChanged(self):
-        current_level = 0
-
-        selection = self.tree.selectedItems()
-        if len(selection) == 1:
-            current_level = selection[0].getLevel()
-
-        self.infoLayout.setCurrentIndex(len(selection))
+        
         
 
 
