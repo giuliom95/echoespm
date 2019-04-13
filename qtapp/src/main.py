@@ -15,10 +15,11 @@ def getContentDataFromServer(path):
     api_url = 'http://127.0.0.1:5000'
     url = f'{api_url}/{path}/'
     # Remove multiple slashes at the end
-    clean_url = re.sub('/*$', '/', url)
+    clean_url = re.sub('/+', '/', url)
+    clean_url = re.sub('http:/', 'http://', clean_url)
     r = requests.get(clean_url)
     if r.status_code / 100 != 2:
-        raise RuntimeError(f'Server answered with {r.status_code}')
+        raise RuntimeError(f'Server answered with {r.status_code} on request at {clean_url}')
     return r.json()
 
 
@@ -47,27 +48,16 @@ class ExplorerElementButton(QtWidgets.QWidget):
     def mousePressEvent(self, event):
         self.view.setSelection(self)
 
+    def mouseDoubleClickEvent(self, event):
+        print('DC')
+
 
 class DirectoryView(QtWidgets.QScrollArea):
 
     def __init__(self):
         super().__init__()
-        pixmap = QtGui.QPixmap(str(IMAGES_PATH.joinpath('folder.png')))
 
-        self.elements = [
-            ExplorerElementButton(self, 'CIAO', pixmap),
-            ExplorerElementButton(self, 'CIAO', pixmap),
-            ExplorerElementButton(self, 'CIAO', pixmap),
-            ExplorerElementButton(self, 'CIAO', pixmap),
-            ExplorerElementButton(self, 'CIAO', pixmap),
-            ExplorerElementButton(self, 'CIAO', pixmap),
-            ExplorerElementButton(self, 'CIAO', pixmap),
-            ExplorerElementButton(self, 'CIAO', pixmap),
-            ExplorerElementButton(self, 'CIAO', pixmap),
-            ExplorerElementButton(self, 'CIAO', pixmap),
-            ExplorerElementButton(self, 'CIAO', pixmap),
-            ExplorerElementButton(self, 'CIAO', pixmap)
-        ]
+        self.elements = self.fetchElements('/content/')
         self.selectedElement = None
 
         # Disable horizontal scrolling
@@ -94,6 +84,7 @@ class DirectoryView(QtWidgets.QScrollArea):
         self.setWidget(gridContainer)
         self.grid.setContentsMargins(0,0,0,0)
 
+
     def clearGrid(self):
         itm = self.grid.takeAt(0) 
         while itm:
@@ -110,7 +101,6 @@ class DirectoryView(QtWidgets.QScrollArea):
 
         if elPerRow == 0:
             elPerRow = 1
-
 
         self.clearGrid()
 
@@ -131,6 +121,15 @@ class DirectoryView(QtWidgets.QScrollArea):
                 e.icon.setPixmap(e.pixmapSelected)
             else:
                 e.icon.setPixmap(e.pixmapNormal)
+
+    def fetchElements(self, path):
+        pixmap = QtGui.QPixmap(str(IMAGES_PATH.joinpath('folder.png')))
+        data = getContentDataFromServer(path)
+        elements = []
+        for entry in data:
+            e = ExplorerElementButton(self, entry['name'], pixmap)
+            elements.append(e)
+        return elements
 
 
 class MainWindow(QtWidgets.QMainWindow):
