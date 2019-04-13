@@ -24,13 +24,17 @@ def getContentDataFromServer(path):
 
 class ExplorerElementButton(QtWidgets.QWidget):
 
-    def __init__(self, text, pixmap):
+    def __init__(self, view, text, pixmap):
         super().__init__()
+        self.view = view
         
-        self.pixmap = pixmap
+        icon = QtGui.QIcon(pixmap)
+        self.pixmapNormal   = icon.pixmap(QtCore.QSize(200,200), QtGui.QIcon.Normal,   QtGui.QIcon.Off)
+        self.pixmapSelected = icon.pixmap(QtCore.QSize(200,200), QtGui.QIcon.Selected, QtGui.QIcon.Off)
+
         self.text = QtWidgets.QLabel(text)
         self.icon = QtWidgets.QLabel()
-        self.icon.setPixmap(self.pixmap.scaled(200,200))
+        self.icon.setPixmap(self.pixmapNormal)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.icon)
@@ -38,14 +42,33 @@ class ExplorerElementButton(QtWidgets.QWidget):
         layout.addWidget(self.text)
         self.setLayout(layout)
 
-        self.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        self.setAutoFillBackground(True)
+
+    def mousePressEvent(self, event):
+        self.view.setSelection(self)
 
 
 class DirectoryView(QtWidgets.QScrollArea):
 
-    def __init__(self, elements):
+    def __init__(self):
         super().__init__()
-        self.elements = elements
+        pixmap = QtGui.QPixmap(str(IMAGES_PATH.joinpath('folder.png')))
+
+        self.elements = [
+            ExplorerElementButton(self, 'CIAO', pixmap),
+            ExplorerElementButton(self, 'CIAO', pixmap),
+            ExplorerElementButton(self, 'CIAO', pixmap),
+            ExplorerElementButton(self, 'CIAO', pixmap),
+            ExplorerElementButton(self, 'CIAO', pixmap),
+            ExplorerElementButton(self, 'CIAO', pixmap),
+            ExplorerElementButton(self, 'CIAO', pixmap),
+            ExplorerElementButton(self, 'CIAO', pixmap),
+            ExplorerElementButton(self, 'CIAO', pixmap),
+            ExplorerElementButton(self, 'CIAO', pixmap),
+            ExplorerElementButton(self, 'CIAO', pixmap),
+            ExplorerElementButton(self, 'CIAO', pixmap)
+        ]
+        self.selectedElement = None
 
         # Disable horizontal scrolling
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
@@ -71,13 +94,11 @@ class DirectoryView(QtWidgets.QScrollArea):
         self.setWidget(gridContainer)
         self.grid.setContentsMargins(0,0,0,0)
 
-
     def clearGrid(self):
         itm = self.grid.takeAt(0) 
         while itm:
             self.grid.removeItem(itm)
             itm = self.grid.takeAt(0) 
-            
 
     def displaceElements(self):
         """
@@ -95,7 +116,6 @@ class DirectoryView(QtWidgets.QScrollArea):
 
         i = 0
         for el in self.elements:
-            print(el, i // elPerRow, i % elPerRow)
             self.grid.addWidget(el, i // elPerRow, i % elPerRow)
             i += 1
 
@@ -103,7 +123,14 @@ class DirectoryView(QtWidgets.QScrollArea):
 
     def resizeEvent(self, event):
         self.displaceElements()
-
+    
+    def setSelection(self, sel):
+        self.selectedElement = sel
+        for e in self.elements:
+            if e == sel:
+                e.icon.setPixmap(e.pixmapSelected)
+            else:
+                e.icon.setPixmap(e.pixmapNormal)
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -126,24 +153,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.addressBar.addStretch()
         mainLayout.addLayout(self.addressBar)
 
-        pixmap = QtGui.QPixmap(str(IMAGES_PATH.joinpath('folder.png')))
-
-        elements = [
-            ExplorerElementButton('CIAO', pixmap),
-            ExplorerElementButton('CIAO', pixmap),
-            ExplorerElementButton('CIAO', pixmap),
-            ExplorerElementButton('CIAO', pixmap),
-            ExplorerElementButton('CIAO', pixmap),
-            ExplorerElementButton('CIAO', pixmap),
-            ExplorerElementButton('CIAO', pixmap),
-            ExplorerElementButton('CIAO', pixmap),
-            ExplorerElementButton('CIAO', pixmap),
-            ExplorerElementButton('CIAO', pixmap),
-            ExplorerElementButton('CIAO', pixmap),
-            ExplorerElementButton('CIAO', pixmap)
-        ]
-
-        directoryView = DirectoryView(elements)
+        directoryView = DirectoryView()
         mainLayout.addWidget(directoryView)
 
         self.setCentralWidget(mainLayoutContainer)
