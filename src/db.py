@@ -486,31 +486,63 @@ class db(object):
         """
         with self.connection.cursor() as cur:
             query = '''
-            DROP TABLE IF EXISTS resources, resource_versions, resource_dependencies, resource_types, content_types, contents;
+            DROP SCHEMA public CASCADE;
+            CREATE SCHEMA public;
+            GRANT ALL ON SCHEMA public TO postgres;
+            GRANT ALL ON SCHEMA public TO public;
+            COMMENT ON SCHEMA public IS 'standard public schema';
 
-            CREATE TABLE IF NOT EXISTS content_types (
-                id           SERIAL PRIMARY KEY,
-                name         VARCHAR(50)
+            CREATE TABLE projects (
+                id            serial PRIMARY KEY,
+                name          varchar(50)
+            );
+
+            CREATE TABLE users (
+                id            serial PRIMARY KEY,
+                username      varchar(50),
+                nicename      varchar(100),
+                email         varchar(50)
+            );
+
+            CREATE TABLE content_types (
+                id            serial PRIMARY KEY,
+                project       integer REFERENCES projects(id),
+                name          varchar(50)
             );
 
             CREATE TABLE IF NOT EXISTS contents (
-                id           SERIAL PRIMARY KEY,
-                type         INTEGER REFERENCES content_types(id),
-                name         VARCHAR(50)
+                id            serial PRIMARY KEY,
+                type          integer REFERENCES content_types(id),
+                name          varchar(50)
             );
 
-            CREATE TABLE IF NOT EXISTS resources (
-                id           SERIAL PRIMARY KEY,
-                content      INTEGER REFERENCES contents(id),
-                name         VARCHAR(50)
+            CREATE TABLE IF NOT EXISTS resource_types (
+                id            serial PRIMARY KEY,
+                content_type  integer REFERENCES content_types(id),
+                name          varchar(50)
             );
 
+            CREATE TYPE version_status AS ENUM (
+                'inactive', 
+                'assigned', 
+                'waiting_review', 
+                'approved', 
+                'discarded'
+            );
             CREATE TABLE IF NOT EXISTS resource_versions (
-                id           SERIAL,
-                resource     INTEGER REFERENCES resources(id),
-                version      INTEGER,
-                dependencies INTEGER[],
-                PRIMARY KEY (id, resource, version)
+                id            serial,
+                resource_type integer REFERENCES resource_types(id),
+                content       integer REFERENCES contents(id),
+                version       integer,
+                dependencies  integer[],
+                status        version_status,
+                creation_date date,
+                upload_date   date,
+                last_change   date,
+                created_by    integer REFERENCES users(id),
+                assigned_to   integer REFERENCES users(id),
+                updated_by    integer REFERENCES users(id),
+                PRIMARY KEY (id, resource_type, content, version)
             );'''
             cur.execute(query)
             self.connection.commit()

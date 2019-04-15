@@ -3,12 +3,9 @@ from flask import request
 from flask import abort
 from flask import jsonify
 
-from flask_cors import CORS
-
 from db import db
 
 app = Flask(__name__)
-CORS(app)
 dbconn = db()
 
 import re
