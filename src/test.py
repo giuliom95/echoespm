@@ -16,9 +16,19 @@ def populate_db():
     server.dbconn.insertContentType('TRES', 'shot')
     server.dbconn.insertContentType('TRES', 'character')
 
-    server.dbconn.insertContent('TRES', 'shot', 'layout')
-    server.dbconn.insertContent('TRES', 'shot', 'animation')
-    server.dbconn.insertContent('TRES', 'shot', 'lighting')
+    server.dbconn.insertResourceType('TRES', 'shot', 'layout')
+    server.dbconn.insertResourceType('TRES', 'shot', 'animation')
+    server.dbconn.insertResourceType('TRES', 'shot', 'lighting')
+
+    server.dbconn.insertContent('TRES', 'shot', '001_001')
+    server.dbconn.insertContent('TRES', 'shot', '001_002')
+    server.dbconn.insertContent('TRES', 'shot', '002_001')
+
+    server.dbconn.insertNewVersion('TRES', 'shot', '001_001', 'layout', 'pgabriel')
+    server.dbconn.insertNewVersion('TRES', 'shot', '001_001', 'layout', 'pgabriel')
+    server.dbconn.insertNewVersion('TRES', 'shot', '001_001', 'layout', 'pgabriel')
+    server.dbconn.insertNewVersion('TRES', 'shot', '001_001', 'animation', 'pgabriel')
+    server.dbconn.insertNewVersion('TRES', 'shot', '002_001', 'animation', 'pgabriel')
     
 
 
@@ -30,6 +40,8 @@ if __name__=='__main__':
 
     server.dbconn.firstSetup()
 
+    populate_db()
+
     # Wait until server thread boots successfully
     while True:
         try:
@@ -38,6 +50,5 @@ if __name__=='__main__':
             continue
         break
 
-    populate_db()
 
     print('Everything went fine.')

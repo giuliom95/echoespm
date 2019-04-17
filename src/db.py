@@ -4,6 +4,7 @@ Postgresql interface
 import psycopg2
 import psycopg2.extras
 import logging
+import time
 
 class db(object):
 
@@ -24,6 +25,91 @@ class db(object):
     def __exit__(self, exc_type, exc_value, traceback):
         self.cursor.close()
         self.connection.close()
+
+    def __getContentTypeId__(self, project, name):
+        """
+        Get id of content type.
+        :param project: Project code.
+        :param name: Content type name.
+        :raise KeyError: No content type of given project named as input.
+        """
+        query = f'''
+            SELECT id
+            FROM content_types
+            WHERE project='{project}' AND name='{name}'
+        '''
+        self.cursor.execute(query)
+        try:
+            id = self.cursor.fetchone()['id']
+        except:
+            raise KeyError(f'No content type named "{name}" found in project "{project}".')
+        return id
+
+
+    def __getResourceTypeId__(self, project, contentType, name):
+        """
+        Get id of resource type.
+        :param project: Project code.
+        :param contentType: Content type name.
+        :param name: Resource type name.
+        :raise KeyError: No resource type of given content type of given project named as input.
+        """
+        contenttype_id = self.__getContentTypeId__(project, contentType)
+
+        query = f'''
+            SELECT id
+            FROM resource_types
+            WHERE content_type='{contenttype_id}' AND name='{name}'
+        '''
+        self.cursor.execute(query)
+        try:
+            id = self.cursor.fetchone()['id']
+        except:
+            raise KeyError(f'No resource type named "{name}" found in content type "{contentType}" of project "{project}".')
+        return id
+
+
+    def __getContentId__(self, project, contentType, name):
+        """
+        Get id of content.
+        :param project: Project code.
+        :param contentType: Content type name.
+        :param name: Content name.
+        :raise KeyError: No content of given content type of given project named as input.
+        """
+        contenttype_id = self.__getContentTypeId__(project, contentType)
+
+        query = f'''
+            SELECT id
+            FROM contents
+            WHERE type='{contenttype_id}' AND name='{name}'
+        '''
+        self.cursor.execute(query)
+        try:
+            id = self.cursor.fetchone()['id']
+        except:
+            raise KeyError(f'No content type named "{name}" found in content type "{contentType}" of project "{project}".')
+        return id
+
+
+    def __getUserId__(self, username):
+        """
+        Get id of user using its username.
+
+        :param username: Username to look up for.
+        :raise KeyError: No user with given username found.
+        """
+        query = f'''
+            SELECT id
+            FROM users
+            WHERE username='{username}'
+        '''
+        self.cursor.execute(query)
+        try:
+            id = self.cursor.fetchone()['id']
+        except:
+            raise KeyError(f'No user with username "{username}" found.')
+        return id
 
 
     def insertUser(self, username, nicename, email):
@@ -82,16 +168,7 @@ class db(object):
         :param name: Name of new content.
         :raise KeyError: No content type of given project named as input.
         """
-        query = f'''
-            SELECT id
-            FROM content_types
-            WHERE project='{project}' AND name='{contentType}'
-        '''
-        self.cursor.execute(query)
-        try:
-            type_id = self.cursor.fetchone()['id']
-        except:
-            raise KeyError(f'No content type named "{contentType}" found in project "{project}".')
+        type_id = self.__getContentTypeId__(project, contentType)
 
         query = f'''
             INSERT INTO contents (type, name) VALUES
@@ -99,6 +176,76 @@ class db(object):
         '''
         self.cursor.execute(query)
         self.connection.commit()
+
+
+    def insertResourceType(self, project, contentType, name):
+        """
+        Insert new resource type.
+
+        :param project: Project code.
+        :param contentType: Content type name.
+        :param name: Name of new resource type.
+        :raise KeyError: No content type of given project named as input.
+        """
+        type_id = self.__getContentTypeId__(project, contentType)
+
+        query = f'''
+            INSERT INTO resource_types (content_type, name) VALUES
+            ('{type_id}', '{name}')
+        '''
+        self.cursor.execute(query)
+        self.connection.commit()
+
+
+    def insertNewVersion(self, project, contentType, content, resourceType, creator):
+        """
+        Insert new version of resource.
+
+        :param project: Project code.
+        :param contentType: Content type name.
+        :param content: Content name.
+        :param resourceType: Resource type name.
+        :param creator: Name of the user who's creating
+        """
+        user_id = self.__getUserId__(creator)
+        resourcetype_id = self.__getResourceTypeId__(project, contentType, resourceType)
+        content_id = self.__getContentId__(project, contentType, content)
+
+        last_version = self.getLastVersion(project, contentType, content, resourceType)
+        new_version = last_version + 1
+
+        query = f'''
+            INSERT INTO resource_versions 
+                (resource_type, content, version, created_by) VALUES
+                ('{resourcetype_id}', '{content_id}', '{new_version}', '{user_id}')
+        '''
+        self.cursor.execute(query)
+        self.connection.commit()
+
+
+    def getLastVersion(self, project, contentType, content, resourceType):
+        """
+        Version number of most recent version.
+
+        :param project: Project code.
+        :param contentType: Content type name.
+        :param content: Content name.
+        :param resourceType: Resource type name.
+        """
+        resourcetype_id = self.__getResourceTypeId__(project, contentType, resourceType)
+        content_id = self.__getContentId__(project, contentType, content)
+        query = f'''
+            SELECT version
+            FROM resource_versions
+            WHERE resource_type={resourcetype_id} AND content={content_id}
+            ORDER BY version DESC
+        '''
+        self.cursor.execute(query)
+        try:
+            ver = self.cursor.fetchone()['version']
+        except:
+            ver = 0
+        return ver
 
 
     def firstSetup(self):
@@ -157,10 +304,10 @@ class db(object):
                 content       integer REFERENCES contents(id),
                 version       integer,
                 dependencies  integer[],
-                status        version_status,
-                creation_date date,
-                upload_date   date,
-                last_change   date,
+                status        version_status DEFAULT 'inactive',
+                creation_date timestamp DEFAULT 'now',
+                upload_date   timestamp,
+                last_change   timestamp,
                 created_by    integer REFERENCES users(id),
                 assigned_to   integer REFERENCES users(id),
                 updated_by    integer REFERENCES users(id),
