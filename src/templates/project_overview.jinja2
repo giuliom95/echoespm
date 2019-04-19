@@ -7,10 +7,10 @@
     <body>
         <div class="table">
             {% for row in table %}
-                <div class="row">
-                    {% for element in row %}
-                        <div class="element">
-                            {{ element }}
+                <div class="row {{row['class']}}">
+                    {% for element in row['content'] %}
+                        <div class="element {{element['class']}}">
+                            {{ element['text'] }}
                         </div>
                     {% endfor %}
                 </div>

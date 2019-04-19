@@ -315,25 +315,29 @@ class db(object):
 
         # Fill structure with actual data
         query = f'''
-            SELECT
-                ct.name         AS content_type,
-                c.name          AS content,
-                rt.name         AS resource_type,
-                MAX(rv.version) AS version,
-                rv.status       AS status
+            SELECT DISTINCT ON(ct.name, c.name, rt.name)
+                ct.name    AS content_type,
+                c.name     AS content,
+                rt.name    AS resource_type,
+                rv.version AS version,
+                rv.status  AS status
             FROM
                 resource_versions AS rv,
                 resource_types    AS rt,
                 contents          AS c,
                 content_types     AS ct
             WHERE
-                ct.project       = 'TRES' AND
+                ct.project       = '{project}' AND
                 c.type           = ct.id       AND
                 rt.content_type  = ct.id       AND
                 rv.content       = c.id        AND
                 rv.resource_type = rt.id
-            GROUP BY
-                ct.name, c.name, rt.name, rv.status
+            ORDER BY
+                ct.name,
+                c.name,
+                rt.name,
+                rv.version DESC,
+                rv.status;
         '''
         self.cursor.execute(query)
         versions = self.cursor.fetchall()

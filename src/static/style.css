@@ -2,8 +2,13 @@ body {
     font-family: Arial, Helvetica, sans-serif;
 }
 
-.table {
+.table .header_row{
+    border-bottom: 1px solid black;
+    margin-top: 10px;
+}
 
+.table .normal_row:nth-child(even){
+    background-color: #eee;
 }
 
 .table .row {
@@ -11,5 +16,65 @@ body {
 }
 
 .table .row .element {
-    flex: 0 1 200px;
+    flex: 0 1 150px;
+    padding: 2px;
+}
+
+.table .row .content_type {
+    font-weight: 700;
+}
+
+.table .row .content_name {
+    margin-left: 30px;
+    margin-right: -30px;
+}
+
+.table .row .inactive {
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 5px,
+        lightgray 5px,
+        lightgray 10px
+    );
+}
+
+.table .row .assigned {
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 5px,
+        #ff07      5px,
+        #ff07      10px
+    );
+}
+
+.table .row .waiting_review {
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 5px,
+        #d707     5px,
+        #d707      10px
+    );
+}
+
+.table .row .approved {
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 5px,
+        #0f07     5px,
+        #0f07     10px
+    );
+}
+
+.table .row .discarded {
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 5px,
+        #f007       5px,
+        #f007       10px
+    );
 }
