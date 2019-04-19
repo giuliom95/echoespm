@@ -1,0 +1,15 @@
+body {
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.table {
+
+}
+
+.table .row {
+    display: flex;
+}
+
+.table .row .element {
+    flex: 0 1 200px;
+}

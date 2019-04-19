@@ -2,15 +2,19 @@
 <html lang="en">
     <head>
         <title></title>
-        <link rel="stylesheet" type="text/css" href="style.css">
+        <link rel="stylesheet" type="text/css" href="{{ css }}">
     </head>
     <body>
-        {% for row in table %}
-            <div>
-            {% for entry in row %}
-                <div>{{ entry }}</div>
+        <div class="table">
+            {% for row in table %}
+                <div class="row">
+                    {% for element in row %}
+                        <div class="element">
+                            {{ element }}
+                        </div>
+                    {% endfor %}
+                </div>
             {% endfor %}
-            </div>
-        {% endfor %}
+        </div>
     </body>
 </html>

@@ -3,6 +3,7 @@ from flask import request
 from flask import abort
 from flask import jsonify
 from flask import render_template
+from flask import url_for
 
 from db import db
 
@@ -31,9 +32,10 @@ def project_overview(project):
                 ver, status = contents[c][rt]
                 if ver == None:
                     ver = 0
-                row.append(ver)
+                row.append('v{0:0>3}'.format(ver))
             table.append(row)
     
-    return render_template('project_overview.jinja2', table=table)
+    css_path = url_for('static', filename='style.css')
+    return render_template('project_overview.jinja2', table=table, css=css_path)
     
 
