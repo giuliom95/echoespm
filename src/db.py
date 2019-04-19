@@ -31,6 +31,7 @@ class db(object):
         Get id of content type.
         :param project: Project code.
         :param name: Content type name.
+        :returns: Content type id.
         :raise KeyError: No content type of given project named as input.
         """
         query = f'''
@@ -52,6 +53,7 @@ class db(object):
         :param project: Project code.
         :param contentType: Content type name.
         :param name: Resource type name.
+        :returns: Content type id.
         :raise KeyError: No resource type of given content type of given project named as input.
         """
         contenttype_id = self.__getContentTypeId__(project, contentType)
@@ -75,6 +77,7 @@ class db(object):
         :param project: Project code.
         :param contentType: Content type name.
         :param name: Content name.
+        :returns: Content id.
         :raise KeyError: No content of given content type of given project named as input.
         """
         contenttype_id = self.__getContentTypeId__(project, contentType)
@@ -97,6 +100,7 @@ class db(object):
         Get id of user using its username.
 
         :param username: Username to look up for.
+        :returns: User id.
         :raise KeyError: No user with given username found.
         """
         query = f'''
@@ -231,6 +235,7 @@ class db(object):
         :param contentType: Content type name.
         :param content: Content name.
         :param resourceType: Resource type name.
+        :returns: Last version id.
         """
         resourcetype_id = self.__getResourceTypeId__(project, contentType, resourceType)
         content_id = self.__getContentId__(project, contentType, content)
@@ -246,6 +251,97 @@ class db(object):
         except:
             ver = 0
         return ver
+
+    
+    def getProjectOverview(self, project):
+        """
+        Get a project overview in an hierarchical format.
+
+        :param project: Project code.
+        :returns: A dictionary like this:
+            {
+                '<content_type1>': {
+                    '<content_type1_content1>': {
+                        '<content_type1_resource_type1>':
+                            (<number_highest_version_resource_type1>, '<status_highest_version_resource_type1>'), 
+                        '<content_type1_resource_type2>':
+                            (<number_highest_version_resource_type2>, '<status_highest_version_resource_type2>'), 
+                        ...
+                        '<content_type1_resource_typeN>':
+                            (<number_highest_version_resource_typeN>, '<status_highest_version_resource_typeN>')
+                    },
+                    '<content_type1_content2>': {...},
+                    ...
+                    '<content_type1_contentM>': {...}
+                },
+                '<content_type2>': {...},
+                ...
+                '<content_typeO>': {...}
+            }
+        """
+
+        # Prepare data structure
+
+        # Fetch content types
+        query = f'''
+            SELECT id, name
+            FROM content_types
+            WHERE project = '{project}'
+        '''
+        self.cursor.execute(query)
+        content_types = self.cursor.fetchall()
+        out = {}
+        for ct in content_types:
+            out[ct['name']] = {}
+
+            query = f'''
+                SELECT name
+                FROM resource_types
+                WHERE content_type='{ct['id']}'
+            '''
+            self.cursor.execute(query)
+            resource_types = self.cursor.fetchall()
+            
+            query = f'''
+                SELECT name
+                FROM contents
+                WHERE type='{ct['id']}'
+            '''
+            self.cursor.execute(query)
+            contents = self.cursor.fetchall()
+
+            for c in contents:
+                out[ct['name']][c['name']] = {rt['name']: (None, None) for rt in resource_types}
+
+        # Fill structure with actual data
+        query = f'''
+            SELECT
+                ct.name         AS content_type,
+                c.name          AS content,
+                rt.name         AS resource_type,
+                MAX(rv.version) AS version,
+                rv.status       AS status
+            FROM
+                resource_versions AS rv,
+                resource_types    AS rt,
+                contents          AS c,
+                content_types     AS ct
+            WHERE
+                ct.project       = 'TRES' AND
+                c.type           = ct.id       AND
+                rt.content_type  = ct.id       AND
+                rv.content       = c.id        AND
+                rv.resource_type = rt.id
+            GROUP BY
+                ct.name, c.name, rt.name, rv.status
+        '''
+        self.cursor.execute(query)
+        versions = self.cursor.fetchall()
+
+        for v in versions:
+            out[v['content_type']][v['content']][v['resource_type']] = (v['version'], v['status'])
+
+        return out
 
 
     def firstSetup(self):
